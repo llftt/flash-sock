@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="video" basedir=".">
+    <property file="build.properties"/>
+    <tstamp>
+        <format property="TODAY"
+                pattern="yyyy-MM-dd HH:mm:ss"
+                locale="zh,CN"/>
+    </tstamp>
+    <target name="copy dist">
+        <echo>
+            ${dist.dir}
+            ${output.dir}
+        </echo>
+        <copy todir="${output.dir}">
+            <fileset dir="${dist.dir}">
+                <include name="**/*.swf"/>
+               
+            </fileset>
+        </copy>
+    </target>
+
+    <target name="Main" description="Compile Main to dist">
+        <echo>[MainFile] Pull the code firstly plz</echo>
+        <echo>[MainFile] Building swf</echo>
+        <echo>[MainFile] Using Flex SDK at: ${mxmlc.dir}</echo>
+        <mkdir dir="${dist.dir}"/>
+
+    	<java jar="${mxmlc.dir}/lib/mxmlc.jar" dir="${mxmlc.dir}/frameworks" fork="true" maxmemory="512m" failonerror="true">
+    		<sysproperty key="file.encoding" value="UTF-8"/>
+    		<arg value="${src.dir}/FlashSocket.as"/>
+           
+            <arg value="-source-path+=${src.dir}"/>
+            <arg value="-output=${dist.dir}/Flash_Socket.swf"/>
+            <arg value="-target-player=11.1"/>
+            <arg value="-swf-version=25"/>
+            <arg value="-default-size=1000,800"/>
+            <arg value="-default-background-color=0x000000"/>
+            <arg value="-static-link-runtime-shared-libraries=true"/>
+            <!-- Include classes from SWCs in this folder, but only the ones we use. -->
+
+            <arg line="-optimize"/>
+            <arg line="-debug=false"/>
+            <arg value="-verbose-stacktraces=true"/>
+            <arg value="-headless-server=true"/>
+            <!--<arg value="-keep-as3-metadata+=Test,Suite,Before,BeforeClass,After,AfterClass,RunWith,Ignore,Inject"/>-->
+            <arg value="-define+=CONFIG::LOCAL,false" />
+        </java>
+    	<copy todir="${bin.dir}" file="${dist.dir}/FlashSocket.swf"/>
+    </target>
+
+</project>
