@@ -1,4 +1,4 @@
-package
+﻿package
 {
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -14,21 +14,26 @@ package
 	{
 		private var socketServerClient:SocketServerClient;
 		private var buffer:ByteArray = new ByteArray();
-		
+		private var loggerFunc:Function;
 
 		private var COMMANDS:Object = {
 			'connect_server' : connectServer,
 			'close_socket':closeSocket,
-			'send_data':sendData
+			'send_data':sendData,
+			'test':test
 		}
 		
-		public function ExternalManager()
+		public function ExternalManager(logger:Function)
 		{
+			this.loggerFunc = logger;
 			socketServerClient = new SocketServerClient();
 			if(ExternalInterface.available)
 			{
-				ExternalInterface.addCallback('socketFlash.Command', onCommand)
+				ExternalInterface.addCallback('socketFlash.Command', onCommand);
+				ExternalInterface.addCallback('test', test);
+//				ExternalInterface.call('console.log', 'externalManager'); //for test execute
 			}
+			
 		}
 		
 		private function initListeners():void
@@ -49,14 +54,14 @@ package
 			if(Global.ns != ""){
 				result = Global.ns + "." + name;
 			}
+			logger(Global.ns);
 			return result;
 		}
 
 		public function ready():void {
 			try{
-				var ready : Boolean = ExternalInterface.call(addNamespace("FlashSocketReady"));
-				logger('ready');
-				if(!ready){
+				var isReady = ExternalInterface.call(addNamespace("FlashSocketReady")); //
+				if(!isReady){
 					startReadyTimer();
 				}
 			}
@@ -68,7 +73,7 @@ package
 		public function receiveData(dataObj:Object):void
 		{
 			var str:String = JSON.stringify(dataObj);
-			ExternalInterface.call(addNamespace("onmessage"),str);
+			ExternalInterface.call(addNamespace("receive_data"),str);
 		}
 		
 		private var readyTimer : Timer;
@@ -86,9 +91,12 @@ package
 			ready();
 		}
 		
-		private function onCommand():Object
+		private function onCommand(command:String, params:Object = null):void
 		{
-			return COMMANDS;
+			var that = this;
+			consoleLogger('onCommand invoke as func'+command);
+			var cmdFunc:Function =  COMMANDS[command];
+			cmdFunc.apply(that, [params]);
 		}
 		
 		private function connectServer(str:String):void
@@ -110,23 +118,32 @@ package
 		
 		private function sendData(data:Object):void
 		{
-			if(data is String)
-			{
-				socketServerClient.writeToSocket(data as String);
-			}else
-			{
-				buffer.writeObject(data);
-				socketServerClient.sendMessageByte(buffer);
-				buffer.position = 0;
-			}
+			buffer.writeObject(data);
+			buffer.position = 0;
+			socketServerClient.sendMessageByte(buffer);	
 		}
 		
 		
 		public function logger(msg:String):void
 		{
-			ExternalInterface.call('console.log',msg);
+			this.loggerFunc.apply(null, [msg]);
 		}
 		//--------------------------test-------------------------
 		
+		private function test(msg:String):void
+		{
+			consoleLogger('test'+msg);
+//			logger('js invoke as func'+msg);
+		}
+		
+		
+		
+		public function consoleLogger(msg:String):void
+		{
+			if(Global.debug)
+			{
+				ExternalInterface.call("console.log", msg);
+			}	
+		}
 	}
 }
