@@ -1,5 +1,7 @@
 package flashsocket
 {
+	import com.junkbyte.console.Cc;
+	
 	import flash.events.ErrorEvent;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -22,8 +24,8 @@ package flashsocket
 		private var byteBuffer:ByteArray;
 		public var ipAddress:String;
 		public var port:int = 9339;
-		private var handledPolicyFile:Boolean;
-		private var waitingForHeader:Boolean;
+		private var handledPolicyFile:Boolean = false;
+		private var waitingForHeader:Boolean = true;
 		private var bytesNeeded:int;
 		
 		public function SocketServerClient()
@@ -52,12 +54,14 @@ package flashsocket
 		private function handleSocketConnection(evt:Event):void
 		{
 			this.isConnected = true;
+			Cc.debug("handleSocketConnection");
 			dispatchXEvent(SSEvent.onConnection, {success:true});
 		}
 		
 		
 		private function handleSocketDisconnection(evt:Event):void
 		{
+			Cc.debug("handleSocketDisconnection");
 			this.initialize();
 			var event:SSEvent = new SSEvent(SSEvent.onConnectionLost, {});
 			dispatchEvent(event);
@@ -76,13 +80,14 @@ package flashsocket
 		
 		private function handleConnectionError(evt:ErrorEvent):void
 		{
+			Cc.debug("handleConnectionError:["+evt.text+"]");
 			if(!this.connected)
 			{
 				dispatchConnectionError();
 			}else
 			{
 				dispatchEvent(evt);
-				trace("[WARN] Connection error: " + evt.text);
+				Cc.warn("[WARN] Connection error: " + evt.text);
 			}
 		}
 		
@@ -174,7 +179,7 @@ package flashsocket
 					var byteArray:ByteArray = new ByteArray();
 					socketConnection.readBytes(byteArray, 0, bytesNeeded);
 					handleBinaryMessage(byteArray);
-					this.waitingForHeader = true;
+					this.waitingForHeader = true; 
 					processBinarySocketData();
 				}
 			}
@@ -183,6 +188,15 @@ package flashsocket
 		private function handleBinaryMessage(byteArray:ByteArray):void
 		{	
 			//根据业务处理二进制数据
+			if(Global.sockTest)
+			{
+				var teststr:String = byteArray.readMultiByte(bytesNeeded, 'utf-8');
+				Cc.debug("handleBinaryMessage:"+teststr);
+			}else
+			{	
+				dispatchXEvent(SSEvent.onReceiveRawData, {"dataObj":byteArray});
+			}
+			
 		}
 		
 		/**写入msg*/
@@ -199,7 +213,8 @@ package flashsocket
 		/**整个消息长度(4字节) + 消息内容的格式*/
 		public function sendMessageByte(byteArray:ByteArray):void
 		{	
-			this.socketConnection.writeInt(byteArray.length + 4); 
+			Cc.debug("SEND["+(byteArray.length+4)+"]");
+			this.socketConnection.writeInt(byteArray.length); 
 			this.socketConnection.writeBytes(byteArray, 0, byteArray.length);
 			this.socketConnection.flush();
 		}
@@ -207,7 +222,7 @@ package flashsocket
 		private function initialize():void
 		{
 			this.connected = false;
-			this.handledPolicyFile = false;
+			this.handledPolicyFile = Global.needParsePolicy ? false : true;
 		}
 		
 		private function dispatchXEvent(evt:String, params:Object):void

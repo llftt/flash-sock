@@ -1,5 +1,8 @@
 ﻿package
 {
+	import com.junkbyte.console.Cc;
+	
+	import flash.display.JointStyle;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.TimerEvent;
@@ -33,12 +36,19 @@
 				ExternalInterface.addCallback('test', test);
 //				ExternalInterface.call('console.log', 'externalManager'); //for test execute
 			}
-			
+			initListeners();
 		}
 		
 		private function initListeners():void
 		{
-			socketServerClient.addEventListener(SSEvent.onReceiveRawData, onReceiveRawData);
+			if(Global.sockTest) socketServerClient.addEventListener(SSEvent.onReceiveRawData, testOnReceiveRawData);
+			else socketServerClient.addEventListener(SSEvent.onReceiveRawData, onReceiveRawData);
+			socketServerClient.addEventListener(SSEvent.onConnection, onConnection);
+		}
+		
+		private function onConnection(evt:SSEvent):void
+		{
+			Cc.debug("connect sock " + evt.params.success);
 		}
 		
 		private function onReceiveRawData(evt:SSEvent):void
@@ -46,7 +56,19 @@
 			var byteArray:ByteArray = evt.params as ByteArray;
 			var data:Object = byteArray.readObject();
 			var dataObj:Object = {"dataObj":data};
+		
 			this.receiveData(dataObj);
+		}
+		
+		private function testOnReceiveRawData(evt:SSEvent):void
+		{
+			var byteArray:ByteArray = evt.params as ByteArray;
+			var arr:Array = [];
+			for(var i:int = 0; i <byteArray.length; i++){
+				arr  = byteArray[i];
+			}
+			var str:String = 'rece raw byte:'+arr.join(',');
+			logger(str);
 		}
 		
 		private function addNamespace(name : String) : String {
@@ -60,7 +82,9 @@
 
 		public function ready():void {
 			try{
-				var isReady = ExternalInterface.call(addNamespace("FlashSocketReady")); //
+				return;
+				var isReady:Boolean = ExternalInterface.call(addNamespace("FlashSocketReady")); //
+				logger("isReady:"+isReady);
 				if(!isReady){
 					startReadyTimer();
 				}
@@ -93,13 +117,14 @@
 		
 		private function onCommand(command:String, params:Object = null):void
 		{
-			var that = this;
-			consoleLogger('onCommand invoke as func'+command);
-			var cmdFunc:Function =  COMMANDS[command];
-			cmdFunc.apply(that, [params]);
+			var log:String = 'onCommand invoke as func'+command;
+			consoleLogger(log);
+			logger(log);
+			var cmdFunc:Function = COMMANDS[command];
+			cmdFunc.apply(this, [params]);
 		}
 		
-		private function connectServer(str:String):void
+		public function connectServer(str:String):void
 		{
 			var data:Object = JSON.parse(str);
 			var ip:String = data['serverIp'];
@@ -116,13 +141,23 @@
 			socketServerClient.onCloseSocket();
 		}
 		
-		private function sendData(data:Object):void
+		public function sendData(data:Object):void
 		{
-			buffer.writeObject(data);
+			Cc.debug("SEND: data"+JSON.stringify(data));
+			if(data is String){
+				buffer.writeUTF(data as String);
+			}else{
+				buffer.writeObject(data);
+			}
 			buffer.position = 0;
 			socketServerClient.sendMessageByte(buffer);	
 		}
 		
+		public function sendMessageByte(buffer:ByteArray):void
+		{
+			buffer.position = 0;
+			socketServerClient.sendMessageByte(buffer);	
+		}
 		
 		public function logger(msg:String):void
 		{
@@ -133,7 +168,6 @@
 		private function test(msg:String):void
 		{
 			consoleLogger('test'+msg);
-//			logger('js invoke as func'+msg);
 		}
 		
 		

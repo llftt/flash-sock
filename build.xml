@@ -37,7 +37,7 @@
             <arg value="-default-background-color=0x000000"/>
             <arg value="-static-link-runtime-shared-libraries=true"/>
             <!-- Include classes from SWCs in this folder, but only the ones we use. -->
-
+    		<arg value="-library-path+=${libs.dir}"/>
             <arg line="-optimize"/>
             <arg line="-debug=false"/>
             <arg value="-verbose-stacktraces=true"/>

@@ -1,6 +1,9 @@
 ﻿package
 {
+	import com.junkbyte.console.Cc;
+	
 	import flash.display.LoaderInfo;
+	import flash.display.SimpleButton;
 	import flash.display.Sprite;
 	import flash.display.Stage;
 	import flash.display.StageAlign;
@@ -8,17 +11,21 @@
 	import flash.events.ErrorEvent;
 	import flash.events.Event;
 	import flash.events.IOErrorEvent;
+	import flash.events.MouseEvent;
 	import flash.events.UncaughtErrorEvent;
 	import flash.external.ExternalInterface;
 	import flash.text.TextField;
 	import flash.text.TextFormat;
+	import flash.utils.ByteArray;
+	
+	import flashx.textLayout.accessibility.TextAccImpl;
 	
 	public class FlashSocket extends Sprite
 	{
 		private var externalManager:ExternalManager;
 		
 		private var txtInfo:TextField = new TextField();
-		
+		private var scrollV:int = 1;
 		public function FlashSocket()
 		{
 			if(stage){
@@ -36,12 +43,12 @@
 			watch(stage.loaderInfo);
 			if(Global.debug)
 			{	
-				var format:TextFormat = new TextFormat();
-				format.size = '18';
-				txtInfo.defaultTextFormat = format;
-				txtInfo.width = 100;
-				txtInfo.multiline = true;
-				addChild(txtInfo);
+				Cc.config.tracing = true;
+				Cc.startOnStage(this, "opentracer");
+				Cc.debug("SOCK INIT.....");
+				Cc.width = 400;
+				Cc.height = 300;
+				initTestSockUI();
 			}
 			removeEventListener(Event.ADDED_TO_STAGE, init);
 			addEventListener(Event.ENTER_FRAME, handleEnterFrame);
@@ -109,8 +116,45 @@
 		{
 			if(Global.debug)
 			{
-				txtInfo.appendText(txt+'\r\n');
+				Cc.debug(txt);
 			}
+		}
+		
+		private var btnConnect:SimpleButton;
+		private var btnSend:SimpleButton;
+		private function initTestSockUI():void
+		{
+			addBtns('链接本地sock', onConnectSock, 100, 100);
+			addBtns('发送消息', onSendMsg, 100, 200);
+		}
+		
+		private function onConnectSock(evt:MouseEvent):void
+		{
+			var data:Object = {"serverIp":"localhost","port":"8989"};
+			externalManager.connectServer(JSON.stringify(data));
+		}
+		
+		private function onSendMsg(evt:MouseEvent):void
+		{
+			var buff:ByteArray = new ByteArray();
+			buff.writeByte(97);
+			buff.writeByte(98);
+			buff.writeByte(99);
+			externalManager.sendMessageByte(buff);
+		}
+		
+		private function addBtns(desc:String, hander:Function, x:Number, y:Number)
+		{
+			var sp:Sprite = new Sprite();
+			var txt:TextField = new TextField();
+			txt.appendText(desc);
+			sp.addChild(txt);
+			var btn = new SimpleButton(sp,sp,sp,sp);
+			btn.addEventListener(MouseEvent.CLICK, hander);
+			
+			btn.x = x;
+			btn.y = y;
+			addChild(btn);
 		}
 	}
 }
