@@ -124,8 +124,10 @@
 		private var btnSend:SimpleButton;
 		private function initTestSockUI():void
 		{
-			addBtns('链接本地sock', onConnectSock, 100, 100);
-			addBtns('发送消息', onSendMsg, 100, 200);
+			if(Global.sockTest){
+				addBtns('链接本地sock', onConnectSock, 100, 100);
+				addBtns('发送消息', onSendMsg, 100, 200);
+			}
 		}
 		
 		private function onConnectSock(evt:MouseEvent):void

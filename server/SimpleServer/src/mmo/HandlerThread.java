@@ -12,11 +12,15 @@ public class HandlerThread extends Thread {
 	private Boolean hasSendPolicy = false;
 	private Boolean waitingForHead = true;
 	private int bytesNeed;
+	private String crossDomainContent;
+	private Boolean hasReadPolicyRequest = false;
 	public HandlerThread(Socket sock){
 		this.sock = sock;
 		try {
 			this.ous = sock.getOutputStream();
 			this.ins = sock.getInputStream();
+//			buildCrossPolicy();
+//			sendCrossPolicy();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -26,24 +30,12 @@ public class HandlerThread extends Thread {
 	public void run(){
 		while(true){
 			try {
-				if(ins.available() == 23)
+				if(ins.available() == 23 && !hasReadPolicyRequest)
 				{
 					byte policyByte[] = new byte[23];
 					ins.read(policyByte, 0, policyByte.length);
-					if(!hasSendPolicy){
-						StringBuilder sb = new StringBuilder();
-						sb.append("<cross-domain-policy>");
-						sb.append("<site-control permitted-cross-domain-policies=\"all\" />");
-						sb.append(" <allow-access-from domain=\"*\" /> ");
-						sb.append(" <allow-http-request-headers-from domain=\"*\" headers=\"*\"/>");
-						sb.append("</cross-domain-policy>");
-						ous.write(sb.toString().getBytes());
-						byte end[] = new byte[1];
-						end[0] = 0;
-						ous.write(end);
-						ous.flush();
-						hasSendPolicy = true;
-					}
+					hasReadPolicyRequest = true;
+					System.out.println("HandlerThread recv policy request");
 				}
 				if(waitingForHead){
 					if(ins.available() >= 4){
@@ -72,6 +64,27 @@ public class HandlerThread extends Thread {
 		}
 	}
 	
+	private void sendCrossPolicy(){
+		if(!hasSendPolicy){
+			try {
+				ous.write(crossDomainContent.getBytes());
+				ous.flush();
+				hasSendPolicy = true;
+				System.out.println("hasSendPolicy");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+	}
+	
+	private void buildCrossPolicy(){
+		StringBuilder sb = new StringBuilder("<cross-domain-policy>");
+		sb.append("<allow-access-from domain=\"*\" to-ports=\"");
+		sb.append("*").append("\" /></cross-domain-policy>\0");
+		crossDomainContent = sb.toString();
+	}
 	/**
 	 * 高位在前接收
 	 * */

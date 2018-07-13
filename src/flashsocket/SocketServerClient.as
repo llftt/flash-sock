@@ -37,16 +37,7 @@ package flashsocket
 			this.socketConnection.addEventListener(IOErrorEvent.IO_ERROR, handleIOError);
 			this.socketConnection.addEventListener(IOErrorEvent.NETWORK_ERROR, handleIOError);
 			//通过加载策略文件或者sock连接后，后端通过sock返回sock内容
-			/**
-			 * crossdomain.xml放在站点根目录，文件内容如下，或者domian改成允许访问的域，或者sock返回策略文件中的策略内容
-			 * <?xml version="1.0"?> 
-<!DOCTYPE cross-domain-policy SYSTEM "http://www.adobe.com/xml/dtds/cross-domain-policy.dtd"> 
-			 * <cross-domain-policy> 
-				<site-control permitted-cross-domain-policies="all" />
-			    <allow-access-from domain="*" /> 
-			    <allow-http-request-headers-from domain="*" headers="*"/>
-			    </cross-domain-policy>
-			 * */
+			//Security.loadPolicyFile("xmlsocket://42.186.14.148:843");			
 			this.socketConnection.addEventListener(SecurityErrorEvent.SECURITY_ERROR, handleSecurityError);
 			this.byteBuffer = new ByteArray();
 		}
@@ -156,6 +147,7 @@ package flashsocket
 						
 					}
 					this.handledPolicyFile = true;
+					Cc.debug("handledPolicyFile end");
 				}
 			}
 			this.processBinarySocketData();

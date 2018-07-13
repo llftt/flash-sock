@@ -28,12 +28,9 @@
 	1.数据是采用  消息长度+消息体信息发送与解析,可自己修改代码，用自己的方式编解码
 	2.成功连接socket后，后端需要通过sock返回策略文件内容，类似下面策略，域可以改为自己的域
 			<?xml version="1.0"?> 
-			<!DOCTYPE cross-domain-policy SYSTEM "http://www.adobe.com/xml/dtds/cross-domain-policy.dtd"> 
-			  <cross-domain-policy> 
-				<site-control permitted-cross-domain-policies="all" />
-			    <allow-access-from domain="*" /> 
-			    <allow-http-request-headers-from domain="*" headers="*"/>
-			    </cross-domain-policy>
+			<cross-domain-policy>
+				<allow-access-from domain="*" to-ports="*"(或者指定端口)
+			</cross-domain-policy>
 	
 	3. flashvars中的ns如果不用命名空间，可以不传或者ns=即可，如果传ns='',则js函数命名空间为. 
 	
@@ -53,3 +50,14 @@
 			     [60, 112, 111, 108, 105, 99, 121, 45, 102, 105, 108, 101, 45, 114, 101, 113, 117, 101, 115, 116, 47, 62, 0];
               	
               	
+=========================================================================
+7.13
+	a.   2048错误，因为策略文件返回有问题，没有加端口
+ 			<cross-domain-policy>
+				<allow-access-from domain="*" to-ports="*"(或者指定端口)
+			</cross-domain-policy>
+	b.策略文件请求顺序
+		一：先请求服务器端的843端口，获取crossdomain.xml,如果没有开启
+		二：查看是否调用Security.loadPolicyFile("xmlsocket://42.186.14.148:843") ip+端口号
+		三：查看发起请求的swf要连接的目标端口有没有策略文件
+			如果服务器843端口未开启，则目标端口会收到 <policy-file-request/>
