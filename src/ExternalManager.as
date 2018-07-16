@@ -44,11 +44,24 @@
 			if(Global.sockTest) socketServerClient.addEventListener(SSEvent.onReceiveRawData, testOnReceiveRawData);
 			else socketServerClient.addEventListener(SSEvent.onReceiveRawData, onReceiveRawData);
 			socketServerClient.addEventListener(SSEvent.onConnection, onConnection);
+			socketServerClient.addEventListener(SSEvent.onConnectionLost, onConnectLost);
 		}
 		
 		private function onConnection(evt:SSEvent):void
 		{
+			var isConnectSucc:Boolean = evt.params.success;
 			Cc.debug("connect sock " + evt.params.success);
+			if(isConnectSucc)
+			{
+				//通知js sock连接成功，调用open方法
+				onCallJs("socket_connect_success");
+			}
+		}
+		
+		/**通知js，socket关闭*/
+		private function onConnectLost(evt:SSEvent):void
+		{
+			onCallJs("socket_connect_close");
 		}
 		
 		private function onReceiveRawData(evt:SSEvent):void
@@ -56,7 +69,6 @@
 			var byteArray:ByteArray = evt.params as ByteArray;
 			var data:Object = byteArray.readObject();
 			var dataObj:Object = {"dataObj":data};
-		
 			this.receiveData(dataObj);
 		}
 		
@@ -79,25 +91,41 @@
 			logger(Global.ns);
 			return result;
 		}
+		
+		/**
+		 * flash显示完成，通知js链接socket
+		 * */
+		public function ready():void
+		{
+			onCallJs(addNamespace("socket_flash_ready"));
+		}
 
-		public function ready():void {
-			try{
-				return;
-				var isReady:Boolean = ExternalInterface.call(addNamespace("FlashSocketReady")); //
-				logger("isReady:"+isReady);
-				if(!isReady){
-					startReadyTimer();
-				}
-			}
-			catch(e : *){
-				startReadyTimer();
-			}
+//		public function ready():void {
+//			try{
+//				var isReady:Boolean = ExternalInterface.call(addNamespace("FlashSocketReady")); //
+//				logger("isReady:"+isReady);
+//				if(!isReady){
+//					startReadyTimer();
+//				}
+//			}
+//			catch(e : *){
+//				startReadyTimer();
+//			}
+//		}
+		
+		/**调用Js方法*/
+		private function onCallJs(command:String, msg:String = null):void
+		{
+			ExternalInterface.call(addNamespace("command"), command, msg);
 		}
 		
-		public function receiveData(dataObj:Object):void
-		{
-			var str:String = JSON.stringify(dataObj);
-			ExternalInterface.call(addNamespace("receive_data"),str);
+		/**
+		 * 收到数据
+		 * */
+		private function receiveData(dataObj:Object):void
+		{			
+			var msg:String = JSON.stringify(dataObj);
+			onCallJs("receive_data", msg);
 		}
 		
 		private var readyTimer : Timer;
@@ -169,9 +197,7 @@
 		{
 			consoleLogger('test'+msg);
 		}
-		
-		
-		
+				
 		public function consoleLogger(msg:String):void
 		{
 			if(Global.debug)

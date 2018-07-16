@@ -61,3 +61,27 @@
 		二：查看是否调用Security.loadPolicyFile("xmlsocket://42.186.14.148:843") ip+端口号
 		三：查看发起请求的swf要连接的目标端口有没有策略文件
 			如果服务器843端口未开启，则目标端口会收到 <policy-file-request/>
+
+==============================================================================
+修改与js交互
+  js中暴露接口command方法,当flash有消息通知时，调用该方法
+  	对应js方法
+  	function command(cmdName, msg){
+  		if(cmdName == "receive_data"){ //处理数据接收，msg为String类型   JSON.stringify后的数据
+  			 var data = JSON.parse(msg);
+  		}else{
+  			  if (cmdName == 'socket_flash_ready') { //flash加载完成，可以进行连接sock操作
+                flashSocket.connect()
+            } else if (cmdName == 'socket_connect_success') { //sock连接成功
+                //open通知
+            } else if (cmdName == 'socket_connect_close') { //sock关闭
+                //关闭通知
+            }
+  		}
+  	}
+  
+  	1.socket连接成功  command("socket_connect_success")
+  	
+  	todo
+  		需要去掉console.swc的依赖，消息日志由web控制台输出，减少编译后文件大小
+  
